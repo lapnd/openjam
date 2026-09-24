@@ -4,7 +4,7 @@
 // but only EMITS once the background arms it. Talks to the isolated-world relay
 // (src/rrweb-relay.js) over the recorder's envelope (src/wire.js). Bundled to
 // dist/page-probe.js.
-import { serializeArgs, captureStack } from "./page-probe/serialize.js";
+import { serializeArgs, captureStack, errorText } from "./page-probe/serialize.js";
 import { installNetworkProbe } from "./page-probe/network.js";
 import { TO_RELAY, FROM_RELAY, FLUSH_INTERVAL_MS, PROBE_FLUSH_EVENT } from "./wire.js";
 
@@ -51,13 +51,13 @@ function main() {
   window.addEventListener("error", (e) => {
     if (!armed) return;
     const err = e.error;
-    const message = err && err.stack ? String(err.stack) : String(e.message || "Uncaught exception");
+    const message = err && err.stack ? errorText(err) : String(e.message || "Uncaught exception");
     emit({ kind: "error", t: Date.now(), message, url: e.filename || null, line: e.lineno || null, column: e.colno || null });
   });
   window.addEventListener("unhandledrejection", (e) => {
     if (!armed) return;
     const r = e.reason;
-    const message = "Unhandled promise rejection: " + (r && r.stack ? r.stack : String(r));
+    const message = "Unhandled promise rejection: " + (r && r.stack ? errorText(r) : String(r));
     emit({ kind: "error", t: Date.now(), message, url: null, line: null, column: null });
   });
 

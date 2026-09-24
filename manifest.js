@@ -11,7 +11,8 @@ const DOC =
   "at most " + MAX_FAILURES + " are listed and failuresOmitted counts any beyond that. " +
   "counts['console.error'] is a subset of counts.console, not a separate kind. " +
   "Extract #openjam-data for full event detail. " +
-  "meta.capture is 'cdp' (Chrome debugger) or 'inject' (page-level probe: network lists fetch/XHR only, screenshots are viewport-only).";
+  "meta.capture is 'cdp' (Chrome debugger), 'inject' (page-level probe: network lists fetch/XHR only, screenshots are viewport-only) " +
+  "or 'firefox' (page probe plus webRequest: other loads are listed without bodies, screenshots are viewport-only).";
 
 function truncate(s) {
   if (typeof s !== "string" || s.length <= MESSAGE_CAP) return s;

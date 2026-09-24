@@ -521,6 +521,8 @@ export function renderReport(container, report) {
   // chrome.debugger was blocked (another extension's frame), so fetch/XHR-only
   // network and viewport screenshots. Say so where the reader looks first.
   if (meta.capture === "inject") metaItem("Capture", "reduced (no debugger)");
+  // "firefox": Firefox has no debugger at all; page probe + webRequest.
+  if (meta.capture === "firefox") metaItem("Capture", "Firefox (no debugger: page-level capture)");
   header.appendChild(metaRow);
   container.appendChild(header);
 

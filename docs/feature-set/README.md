@@ -21,6 +21,7 @@ choose to share it. See [Privacy & data control](privacy.md).
 | [Audio narration](audio-narration.md) | Opt-in mic narration, recorded locally and synced to the timeline |
 | [Bug report export](bug-report.md) | One self-contained, offline HTML file with a correlated timeline |
 | [AI manifest](ai-manifest.md) | An embedded, AI-readable index so agents can diagnose reports fast |
+| [Firefox support](firefox.md) | The same recording on Firefox, and exactly where it differs from Chrome |
 | [Privacy & data control](privacy.md) | Nothing uploaded; everything local; you decide what's shared |
 
 ## Conventions

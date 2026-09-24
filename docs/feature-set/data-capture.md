@@ -49,6 +49,12 @@ The viewer's header shows `Capture reduced (no debugger)` on such a report. The 
 probe that makes reduced mode work is put into the recorded tab only, and only for the
 duration of the recording; every other page keeps its native `fetch` and `console`.
 
+## On Firefox
+
+Firefox has no `chrome.debugger`, so its build always records the way reduced mode does — page
+probe for console/errors/fetch/XHR, viewport screenshots — plus `webRequest` for every other
+load's status, headers and timing (no bodies). See [Firefox support](firefox.md).
+
 ## What to expect / limitations
 
 - Network response bodies are captured for text content under ~100 KB; larger or binary

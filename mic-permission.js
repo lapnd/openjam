@@ -22,6 +22,6 @@ const msg = document.getElementById("msg");
     msg.className = "err";
     msg.textContent =
       "Microphone access failed: " + err.message +
-      ". Open this extension's site settings (chrome://settings/content/microphone) to allow it, then try again.";
+      ". Open this extension's site settings (" + (typeof browser === "undefined" ? "chrome://settings/content/microphone" : "about:preferences#privacy") + ") to allow it, then try again.";
   }
 })();

@@ -21,7 +21,7 @@ function serializeOne(value, depth, seen) {
   if (type === "number" || type === "boolean" || type === "bigint" || type === "symbol") return String(value);
   if (type === "undefined") return "undefined";
   if (type === "function") return "function " + (value.name || "") + "()";
-  if (value instanceof Error) return value.stack || String(value);
+  if (value instanceof Error) return errorText(value);
   if (seen.has(value)) return "[Circular]";
   if (depth >= MAX_DEPTH) return Array.isArray(value) ? "[…]" : "{…}";
   seen.add(value);
@@ -47,16 +47,36 @@ export function serializeArgs(args) {
   return Array.from(args, (a) => clip(serializeOne(a, 0, seen))).join(" ");
 }
 
-// Stack frames as "name — url:line:col" strings, matching the CDP lane's
-// formatStackTrace output. Drops its own frame plus `skip` caller frames (the
+// An error as text, message included. V8's `stack` leads with "Name: message";
+// Firefox's and Safari's hold only frames ("fn@url:line:col"), so on those the
+// message would be lost if the stack stood in for the whole error.
+export function errorText(err) {
+  const stack = err && err.stack ? String(err.stack) : "";
+  const head = String(err);
+  return !stack ? head : stack.includes(head) ? stack : head + "\n" + stack;
+}
+
+// Stack text -> "name — url:line:col" frames, matching the CDP lane's
+// formatStackTrace output. Reads V8's "at fn (url:l:c)" frames and
+// Firefox/Safari's "fn@url:l:c" ones. Drops the first `drop` frames.
+export function parseStack(raw, drop = 0) {
+  const lines = String(raw || "").split("\n").map((l) => l.trim());
+  const v8 = lines.some((l) => l.startsWith("at "));
+  // V8 leads with an "Error" header line, which the `at ` filter drops.
+  const frames = (v8 ? lines.filter((l) => l.startsWith("at ")) : lines.filter(Boolean)).slice(drop);
+  return frames.map((l) => {
+    if (v8) {
+      const frame = l.replace(/^at\s+/, "");
+      const m = /^(.*?)\s+\((.*)\)$/.exec(frame);
+      return m ? m[1] + " — " + m[2] : "(anonymous) — " + frame;
+    }
+    const at = l.indexOf("@");
+    return (at > 0 ? l.slice(0, at) : "(anonymous)") + " — " + l.slice(at + 1);
+  });
+}
+
+// The caller's stack, without this function's own frame plus `skip` more (the
 // probe passes 1 for its console wrapper).
 export function captureStack(skip = 0) {
-  const raw = (new Error().stack || "").split("\n").slice(2 + skip);
-  return raw
-    .map((l) => l.trim().replace(/^at\s+/, ""))
-    .filter(Boolean)
-    .map((l) => {
-      const m = /^(.*?)\s+\((.*)\)$/.exec(l);
-      return m ? m[1] + " — " + m[2] : "(anonymous) — " + l;
-    });
+  return parseStack(new Error().stack, 1 + skip);
 }

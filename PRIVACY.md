@@ -41,7 +41,8 @@ treat the replay of an untrusted page as untrustworthy.**
 
 | Permission | Why |
 |---|---|
-| `debugger` | Attach the Chrome DevTools Protocol to the recorded tab — the source of console/network/error/screenshot events |
+| `debugger` (Chrome only) | Attach the Chrome DevTools Protocol to the recorded tab — the source of console/network/error/screenshot events |
+| `webRequest` (Firefox only) | Observe — never block or modify — the recorded tab's requests, to list every load's status, headers and timing. Firefox has no `debugger` |
 | `<all_urls>` host access | Record whichever page the bug is on |
 | `scripting` | Inject the session-replay recorder into pages that were already open before OpenJam was installed |
 | `storage`, `unlimitedStorage` | Save the report locally without a size cap |

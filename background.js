@@ -82,6 +82,11 @@ session.lane = idleLane;
 
 const cdpLane = createCdpLane({ session, pushEvent, maybeErrorScreenshot });
 const injectLane = createInjectLane({ session, pushEvent, maybeErrorScreenshot, tell });
+// Browser adapter: Firefox loads browsers/firefox/platform.js ahead of this
+// module, and it has no chrome.debugger to attach, so it supplies its own lane
+// and its limits notice. Chrome has no adapter and takes the CDP path.
+const platform = globalThis.openjamPlatform || null;
+const platformLane = platform ? platform.createLane({ session, pushEvent, maybeErrorScreenshot, tell }) : null;
 
 // Content scripts can be absent (extension reloaded after the page loaded, or a
 // page the manifest match didn't reach). Inject both halves: the rrweb recorder
@@ -268,15 +273,17 @@ async function startRecording(tabId) {
   // Any attach failure falls back to the inject lane: a reduced recording that
   // names its cause beats no recording. The foreign-frame case additionally
   // names the extension so the popup can offer a way to it.
-  let lane = cdpLane;
+  let lane = platformLane || cdpLane;
   let blockedBy = null;
   let attachError = null;
-  try {
-    await cdpLane.attach(tabId);
-  } catch (err) {
-    lane = injectLane;
-    attachError = String(err && err.message ? err.message : err);
-    if (FOREIGN_EXTENSION_FRAME.test(attachError)) blockedBy = await scanForeignFrames(tabId);
+  if (!platformLane) {
+    try {
+      await cdpLane.attach(tabId);
+    } catch (err) {
+      lane = injectLane;
+      attachError = String(err && err.message ? err.message : err);
+      if (FOREIGN_EXTENSION_FRAME.test(attachError)) blockedBy = await scanForeignFrames(tabId);
+    }
   }
   if (!session.recording || session.stopping) {
     // A stop (or tab close) landed while we were attaching; that path has
@@ -285,7 +292,7 @@ async function startRecording(tabId) {
     return { ok: false, error: "Recording was stopped before it started." };
   }
   session.lane = lane;
-  const warning = lane === injectLane ? reducedCaptureWarning(blockedBy, attachError) : null;
+  const warning = platformLane ? platform.captureNotice : lane === injectLane ? reducedCaptureWarning(blockedBy, attachError) : null;
   if (warning) pushEvent({ t: Date.now(), kind: KIND.LOG, level: "warning", title: warning, detail: { message: warning, blockedBy, attachError } });
   await session.lane.start(tabId);
 
@@ -415,7 +422,9 @@ async function saveReport(key, report) {
 
 // The user detached via the banner (Cancel), or DevTools grabbed the tab: don't
 // lose the capture — salvage it. CDP is already gone here.
-chrome.debugger.onDetach.addListener((source, reason) => {
+// chrome.debugger does not exist in Firefox; the tabs.onRemoved salvage below
+// covers its closed-tab case.
+if (chrome.debugger) chrome.debugger.onDetach.addListener((source, reason) => {
   if (source.tabId !== session.tabId) return;
   const why =
     reason === "canceled_by_user"
@@ -432,7 +441,7 @@ chrome.tabs.onRemoved.addListener((tabId) => {
   salvageRecording("Recording ended early: the recorded tab was closed. Saved everything captured up to this point.").catch(() => {});
 });
 
-chrome.debugger.onEvent.addListener((source, method, params) => cdpLane.onDebuggerEvent(source, method, params));
+if (chrome.debugger) chrome.debugger.onEvent.addListener((source, method, params) => cdpLane.onDebuggerEvent(source, method, params));
 
 chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
   if (msg.type) return; // content-script messages are handled by the listener above

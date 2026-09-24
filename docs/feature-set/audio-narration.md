@@ -21,6 +21,10 @@ offscreen doc records **one continuous `webm/opus` track** for the whole session
 it back to the worker as a base64 data URL. The worker folds it into `report.audio`
 (`{ dataUrl, mime, startWall, durationMs }`), inlined the same way screenshots are.
 
+On Firefox there is no offscreen API and none is needed: its background page has a DOM, so a
+small shim (`browsers/firefox/offscreen-shim.js`) hosts the same `offscreen.html` in a hidden
+iframe of it. See [Firefox support](firefox.md) for what is verified.
+
 Playback uses **one player** with **one timeline spanning the longer of the replay and the
 narration** — you usually keep talking after the screen stops changing, and that tail must
 stay reachable. Inside the replay's span the rrweb replayer is the clock and narration

@@ -11,3 +11,6 @@ docs/tickets/
 
 # devcontainer credential staging (scripts/devcontainer-auth.mjs)
 .devcontainer/.claude-creds.json
+
+# extension build output (make build-chrome / build-firefox)
+build/

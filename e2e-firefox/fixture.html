@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>OpenJam Firefox Fixture</title>
+<link rel="stylesheet" href="/style.css">
+<!-- Empty at snapshot time; #injectStyle later adds a rule into THIS sheet through
+     the CSSOM (no DOM mutation, like Emotion's speedy mode). Only a recorder in
+     the page's own (MAIN) world can see that. -->
+<style id="dynsheet"></style>
+</head>
+<body>
+  <h1>OpenJam Firefox Fixture</h1>
+  <label>Name: <input id="name" type="text"></label>
+  <label>Secret: <input id="secret" type="password"></label>
+  <div id="counter">0</div>
+  <button id="inc">Increment</button>
+  <button id="netBtn">Network</button>
+  <button id="errBtn">Trigger error</button>
+  <div id="cssinjs">Runtime-styled via insertRule</div>
+  <button id="injectStyle">Inject style</button>
+  <img id="static-img" src="/pixel.png" width="8" height="8" alt="">
+  <script src="/app.js"></script>
+  <script>
+    let n = 0;
+    document.getElementById("inc").addEventListener("click", () => {
+      n += 1;
+      document.getElementById("counter").textContent = String(n);
+      console.log("counter is now", n);
+    });
+    // Every request kind the Firefox lane has to tell apart.
+    document.getElementById("netBtn").addEventListener("click", async () => {
+      await fetch("/api/ok").then((r) => r.json());
+      await fetch("/api/fail").then((r) => console.log("fail status", r.status));
+      const xhr = new XMLHttpRequest();
+      xhr.open("GET", "/api/ok?via=xhr");
+      xhr.send();
+      new Image().src = "/late.png"; // a plain load: only webRequest sees it
+      new Image().src = "/missing.png"; // 404
+      new Image().src = "__REFUSED_URL__"; // connection refused (the server swaps in a closed port)
+    });
+    document.getElementById("injectStyle").addEventListener("click", () => {
+      document.getElementById("dynsheet").sheet.insertRule("#cssinjs{background:rgb(42,161,152);color:#fff;padding:18px}", 0);
+    });
+    document.getElementById("errBtn").addEventListener("click", () => {
+      throw new Error("firefox fixture error");
+    });
+  </script>
+</body>
+</html>

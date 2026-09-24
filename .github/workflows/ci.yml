@@ -44,3 +44,32 @@ jobs:
         with:
           name: e2e-failure-context
           path: test-results/
+
+  # The Firefox e2e suite drives stock Firefox (downloaded, pinned, by
+  # `npm run firefox:install`) over WebDriver BiDi. Its own job, outside the
+  # Playwright image, so a Firefox problem is visible without touching the
+  # Chrome job; `npm test` in the job above skips the Firefox suite when no
+  # Firefox is installed. REQUIRE_FIREFOX turns that skip into a failure here.
+  firefox:
+    runs-on: ubuntu-latest
+    env:
+      REQUIRE_FIREFOX: "1"
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: lts/*
+      - run: npm ci
+      - run: npm run firefox:install
+      - run: npm run build
+      - run: npm run test:firefox
+      # The installable Firefox build (unpacked; GitHub zips the artifact).
+      - uses: actions/upload-artifact@v4
+        with:
+          name: openjam-firefox-${{ github.sha }}
+          path: build/firefox/
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: firefox-e2e-failure-context
+          path: test-results/

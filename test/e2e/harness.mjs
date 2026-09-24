@@ -16,7 +16,9 @@ export const ROOT = path.dirname(path.dirname(path.dirname(fileURLToPath(import.
 // `extraExtensions` loads additional unpacked extensions alongside OpenJam, for
 // specs that need another extension present on the page (issue #48).
 export async function launchExtension({ headful = !!process.env.HEADFUL, extraExtensions = [] } = {}) {
-  const extensionPaths = [ROOT, ...extraExtensions].join(",");
+  // OPENJAM_EXTENSION_DIR points the suite at a built package (make test-chrome
+  // uses build/chrome/) instead of the source checkout.
+  const extensionPaths = [process.env.OPENJAM_EXTENSION_DIR ? path.resolve(process.env.OPENJAM_EXTENSION_DIR) : ROOT, ...extraExtensions].join(",");
   const context = await chromium.launchPersistentContext("", {
     channel: "chromium",
     headless: !headful,
